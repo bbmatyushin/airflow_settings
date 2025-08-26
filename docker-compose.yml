@@ -1,3 +1,5 @@
+# Выполнить отдельную сборку для Dockerfile, чтобы получить образ airflow_custom:3.0.4
+# docker build -t airflow_custom:3.0.4 .
 version: '3.3'
 
 services:
@@ -33,7 +35,7 @@ services:
     restart: always
 
   airflow-apiserver:
-    image: apache/airflow:3.0.4
+    image: airflow_custom:3.0.4
     command: api-server
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -53,6 +55,8 @@ services:
       - ${AIRFLOW_VOLUME_DIR:-.}/logs:/opt/airflow/logs
       - ${AIRFLOW_VOLUME_DIR:-.}/plugins:/opt/airflow/plugins
       - ${AIRFLOW_VOLUME_DIR:-.}/webserver_config.py:/opt/airflow/webserver_config.py
+      - ${AIRFLOW_SSH_DIR:-.}/id_rsa:/home/airflow/.ssh/id_rsa
+      - ${AIRFLOW_SSH_DIR:-.}/known_hosts:/home/airflow/.ssh/known_hosts
     ports:
       - "8080:8080"
     healthcheck:
@@ -67,7 +71,7 @@ services:
       - airflow-init
 
   airflow-scheduler:
-    image: apache/airflow:3.0.4
+    image: airflow_custom:3.0.4
     command: scheduler
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -87,6 +91,8 @@ services:
       - ${AIRFLOW_VOLUME_DIR:-.}/logs:/opt/airflow/logs
       - ${AIRFLOW_VOLUME_DIR:-.}/plugins:/opt/airflow/plugins
       - ${AIRFLOW_VOLUME_DIR:-.}/webserver_config.py:/opt/airflow/webserver_config.py
+      - ${AIRFLOW_SSH_DIR:-.}/id_rsa:/home/airflow/.ssh/id_rsa
+      - ${AIRFLOW_SSH_DIR:-.}/known_hosts:/home/airflow/.ssh/known_hosts
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
@@ -99,7 +105,7 @@ services:
       - airflow-init
       
   airflow-dag-processor:
-    image: apache/airflow:3.0.4
+    image: airflow_custom:3.0.4
     command: dag-processor
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -114,10 +120,12 @@ services:
       AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
       TZ: Europe/Moscow
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-      - ./webserver_config.py:/opt/airflow/webserver_config.py
+      - ${AIRFLOW_VOLUME_DIR:-.}/dags:/opt/airflow/dags
+      - ${AIRFLOW_VOLUME_DIR:-.}/logs:/opt/airflow/logs
+      - ${AIRFLOW_VOLUME_DIR:-.}/plugins:/opt/airflow/plugins
+      - ${AIRFLOW_VOLUME_DIR:-.}/webserver_config.py:/opt/airflow/webserver_config.py
+      - ${AIRFLOW_SSH_DIR:-.}/id_rsa:/home/airflow/.ssh/id_rsa
+      - ${AIRFLOW_SSH_DIR:-.}/known_hosts:/home/airflow/.ssh/known_hosts
     user: "${AIRFLOW_UID:-50000}:0"
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
@@ -132,7 +140,7 @@ services:
       - airflow-init
 
   airflow-init:
-    image: apache/airflow:3.0.4
+    image: airflow_custom:3.0.4
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
     command:
@@ -234,6 +242,8 @@ services:
       - ${AIRFLOW_VOLUME_DIR:-.}/logs:/opt/airflow/logs
       - ${AIRFLOW_VOLUME_DIR:-.}/plugins:/opt/airflow/plugins
       - ${AIRFLOW_VOLUME_DIR:-.}/webserver_config.py:/opt/airflow/webserver_config.py
+      - ${AIRFLOW_SSH_DIR:-.}/id_rsa:/home/airflow/.ssh/id_rsa
+      - ${AIRFLOW_SSH_DIR:-.}/known_hosts:/home/airflow/.ssh/known_hosts
     depends_on:
       - redis
       - postgres
